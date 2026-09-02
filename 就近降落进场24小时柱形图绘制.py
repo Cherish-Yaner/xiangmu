@@ -154,8 +154,8 @@ for db_name in db_names:
     conflict_counts = np.array(conflict_counts)
     total_conflicts = int(conflict_counts.sum())
 
-    # 开始绘图
-    plt.figure(figsize=(12, 6))
+    # 开始绘图，适当增高图片以容纳底部图例
+    plt.figure(figsize=(12, 7))
 
     max_y = hourly_counts.max()
     upper_y = max(max_y * 1.2 if max_y > 0 else 0, capacity * 1.15, threshold * 1.2, 10)
@@ -197,7 +197,7 @@ for db_name in db_names:
         label=f'80%容量阈值 ({threshold:.1f})',
     )
 
-    plt.title(f'场景"{db_name}"下的就近降落航班总流量24小时分布(系统仿真)', fontsize=16)
+    plt.title(f'场景"{db_name}"下的就近降落航班阈值分析', fontsize=16)
     plt.xlabel('时间 (小时)', fontsize=12)
     plt.ylabel('航班数量 (架次)', fontsize=12)
 
@@ -244,12 +244,21 @@ for db_name in db_names:
 
     handles1, labels1 = ax1.get_legend_handles_labels()
     handles2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(handles1 + handles2, labels1 + labels2, loc='upper right')
+
+    # 将图例移到图表下方并横向排布，避免遮挡柱状图和参考线
+    ax1.legend(
+        handles1 + handles2,
+        labels1 + labels2,
+        loc='upper center',
+        bbox_to_anchor=(0.5, -0.24),
+        ncol=4,
+        frameon=False,
+    )
 
     plt.tight_layout()
 
-    file_name = f'{db_name}-就近降落航班总流量24小时柱形图(系统仿真).png'
-    plt.savefig(file_name, dpi=300)
+    file_name = f'{db_name}-就近降落航班阈值分析.svg'
+    plt.savefig(file_name, dpi=300, bbox_inches='tight')
     print(f"已成功生成并保存图表: {file_name}")
     print(f"该场景五边冲突总数为: {total_conflicts}\n")
     plt.close()
