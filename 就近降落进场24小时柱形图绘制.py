@@ -50,6 +50,18 @@ def get_direction(routing):
     return ''
 
 
+def conflict_bar_color(conflict, max_conflict):
+    """每小时柱状图颜色：五边冲突数 <=10 为绿色，>10 时由黄色向红色渐变，最大值为红色。"""
+    if conflict <= 10:
+        return '#4CAF50'
+    yellow = np.array([255, 235, 59])   # 黄色 #FFEB3B
+    red = np.array([244, 67, 54])       # 红色 #F44336
+    denom = max(max_conflict - 10, 1)
+    t = min((conflict - 10) / denom, 1.0)
+    rgb = yellow + (red - yellow) * t
+    return '#{:02x}{:02x}{:02x}'.format(*(int(round(c)) for c in rgb))
+
+
 for db_name in db_names:
     print(f"开始处理数据库: {db_name} ...")
 
@@ -154,6 +166,10 @@ for db_name in db_names:
     conflict_counts = np.array(conflict_counts)
     total_conflicts = int(conflict_counts.sum())
 
+    # 按每小时冲突数确定柱状图颜色
+    max_conflict = int(conflict_counts.max())
+    bar_colors = [conflict_bar_color(int(c), max_conflict) for c in conflict_counts]
+
     # 开始绘图，适当增高图片以容纳底部图例
     plt.figure(figsize=(12, 7))
 
@@ -169,7 +185,7 @@ for db_name in db_names:
         hourly_counts,
         width,
         label=f'总流量 ({total_all})',
-        color='#4CAF50',
+        color=bar_colors,
     )
 
     plt.bar_label(
@@ -185,7 +201,6 @@ for db_name in db_names:
         color='red',
         linestyle='-',
         linewidth=2,
-        label=f'运行容量 ({capacity})',
     )
 
     # 80% 容量阈值红色虚线
@@ -194,7 +209,28 @@ for db_name in db_names:
         color='red',
         linestyle='--',
         linewidth=2,
-        label=f'80%容量阈值 ({threshold:.1f})',
+    )
+
+    # 用箭头将运行容量和 80% 容量阈值标注在红线上
+    plt.annotate(
+        f'运行容量 ({capacity})',
+        xy=(0.3, capacity),
+        xytext=(0.3, capacity + 5),
+        color='red',
+        fontsize=11,
+        ha='left',
+        va='bottom',
+        arrowprops=dict(arrowstyle='->', color='red', lw=1.2),
+    )
+    plt.annotate(
+        f'80%容量阈值 ({threshold:.1f})',
+        xy=(0.3, threshold),
+        xytext=(0.3, threshold + 5),
+        color='red',
+        fontsize=11,
+        ha='left',
+        va='bottom',
+        arrowprops=dict(arrowstyle='->', color='red', lw=1.2),
     )
 
     plt.title(f'场景"{db_name}"下的就近降落航班阈值分析', fontsize=16)
@@ -245,14 +281,14 @@ for db_name in db_names:
     handles1, labels1 = ax1.get_legend_handles_labels()
     handles2, labels2 = ax2.get_legend_handles_labels()
 
-    # 将图例移到图表下方并横向排布，避免遮挡柱状图和参考线
+    # 将图例放置在图表框内右上角
     ax1.legend(
         handles1 + handles2,
         labels1 + labels2,
-        loc='upper center',
-        bbox_to_anchor=(0.5, -0.24),
-        ncol=4,
+        loc='upper right',
+        ncol=1,
         frameon=False,
+        fontsize=9,
     )
 
     plt.tight_layout()
